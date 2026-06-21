@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>Chinese Acquisition Experiment (Pilot)</title>
+
+    <link href="https://unpkg.com/jspsych@8.2.1/css/jspsych.css" rel="stylesheet">
+    <script src="https://unpkg.com/jspsych@8.2.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-html-form"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-likert"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-call-function"></script>
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
+
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: #334155; margin: 0; padding: 0;
+        }
+        .jspsych-content-wrapper { background-color: #f0f4f8; }
+        .jspsych-content {
+            background-color: #ffffff; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 50px 60px;
+            max-width: 850px; width: 100%; box-sizing: border-box;
+        }
+        h1, h2, h3 { color: #0f172a; font-weight: 600; }
+        h1 { font-size: 28px; margin-bottom: 20px; }
+        h3 { font-size: 22px; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .jspsych-btn {
+            background-color: #2563eb; color: white; border: none; border-radius: 8px;
+            padding: 14px 32px; font-size: 16px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s ease; margin-top: 30px;
+        }
+        .jspsych-btn:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+
+        input[type="text"], input[type="number"], select {
+            border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px;
+            font-size: 16px; transition: border-color 0.2s; font-family: inherit;
+        }
+        input:focus, select:focus { border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .ept-context {
+            font-size: 18px; line-height: 1.8; color: #475569; text-align: left;
+            background: #f8fafc; padding: 24px; border-radius: 8px; border-left: 5px solid #3b82f6; margin-bottom: 20px;
+        }
+        .kaiti-text { font-family: '楷体', KaiTi, STKaiti, serif; font-size: 26px; font-weight: 600; color: #0f172a; }
+        .ept-prompt { text-align: left; margin-bottom: 15px; }
+        .example-box { background-color: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 8px; text-align: left; margin-bottom: 20px;}
+        .attention-box { background-color: #fef2f2; border: 2px solid #fca5a5; padding: 20px; border-radius: 8px; text-align: left; margin-bottom: 20px; color:#b91c1c;}
+        .cloze-passage { font-size: 18px; line-height: 2.4; text-align: left; color:#334155; }
+        .jspsych-survey-likert-statement { margin-bottom: 50px; }
+    </style>
+</head>
+<body>
+    <script>
+        // ==========================================
+        // 0. 辅助函数
+        // ==========================================
+        function getAgeOptions() {
+            let opts = '<option value="" disabled selected>请选择</option>';
+            for(let i=16; i<=60; i++) opts += `<option value="${i}">${i}岁</option>`;
+            return opts;
+        }
+        // ==========================================
+        // 1. 初始化 & 数据配置
+        // ==========================================
+        const jsPsych = initJsPsych({ show_progress_bar: true, message_progress_bar: '实验进度' });
+
+        const subject_id = jsPsych.randomization.randomID(10);
+        const completion_code = "COMP-" + Math.floor(Math.random() * 900000 + 100000);
+
+        jsPsych.data.addProperties({
+            subject_id: subject_id,
+            completion_code: completion_code,
+            task_order_sequence: "Free_Guided_AJT (L2) / AJT_only (Native)"
+        });
+
+        const DATA_PIPE_EXPERIMENT_ID = "ficGlRV0i0hZ"; // ⚠️ 替换为你的真实 ID
+        const timeline = [];
+
+        // ==========================================
+        // 语料库 A：自由产出 (无关键词) —— 仅二语者
+        // ==========================================
+        const freeEptItemsRaw = [
+            { id:"FREE01", type:"target", context:"小李生病住院了。他平时是个很能吃的人，但最近家人每次探病带来的东西，都原封不动地带了回去。", prompt:"小李病得很严重，" },
+            { id:"FREE02", type:"target", context:"这次期末考试成绩出来后，班上平时被同学们称为“学霸”的几个人，考完都低着头离开了考场。", prompt:"这次考试格外难，" },
+            { id:"FREE03", type:"target", context:"小李在朋友圈里是出了名的节俭，从不多花一分钱。上个月女朋友过生日，他却买了一件非常贵的礼物。", prompt:"小李对女朋友真好，" },
+            { id:"FREE04", type:"target", context:"小陈在公司出了名地不喝酒，每次聚餐都只喝饮料。昨天年会后，大家第一次看到他喝醉了。", prompt:"昨天的年会真特别，" },
+            { id:"FREE05", type:"target", context:"小丽是朋友圈里公认胆子最大的人，平时看任何恐怖片都面不改色。上周她去看一部新上映的恐怖片，看到一半就跑出了电影院。", prompt:"这部电影太吓人了，" },
+            { id:"FREE_F1", type:"filler", context:"小张的朋友们说，最近很难约到他出来，每次联系他都说在加班。", prompt:"小张最近太辛苦了，" },
+            { id:"FREE_F2", type:"filler", context:"这家面包店开业才两个月，在附近居民中已经有了很好的口碑。", prompt:"这家面包店很受欢迎，" }
+        ];
+
+        // ==========================================
+        // 语料库 B：可接受度判断任务 (AJT) —— 母语者与二语者都做
+        // ==========================================
+        const ajtItemsRaw = [
+            { id:"AJT01", category:"lian_position", condition:"ungrammatical", sentence:"这次任务太复杂了，经验最丰富的工程师都连解决不了。" },
+            { id:"AJT02", category:"lian_position", condition:"ungrammatical", sentence:"这本书太厚了，第一章连都没时间看。" },
+            { id:"AJT03", category:"lian_position", condition:"ungrammatical", sentence:"他名字连都不记得。" },
+            { id:"AJT04", category:"lian_position", condition:"ungrammatical", sentence:"我一次连都没去过上海。" },
+            { id:"AJT05", category:"extra_duiyu", condition:"ungrammatical", sentence:"这个规则太复杂了，连对于老师也说不清楚。" },
+            { id:"AJT06", category:"extra_duiyu", condition:"ungrammatical", sentence:"这是一个很难的课题，连对于研究所的专家也不知道答案。" },
+            { id:"AJT07", category:"missing_dou", condition:"ungrammatical", sentence:"这个地方太偏僻了，连土生土长的本地人找不到。" },
+            { id:"AJT08", category:"missing_dou", condition:"ungrammatical", sentence:"这件事太难了，连他这个经理解决不了。" },
+            { id:"AJT09", category:"missing_dou", condition:"ungrammatical", sentence:"他太激动了，连自己的名字写错了。" },
+            { id:"AJT10", category:"missing_dou", condition:"ungrammatical", sentence:"这家公司太过分了，连员工的工资不发。" },
+            { id:"AJT11", category:"word_order", condition:"ungrammatical", sentence:"对他来说，工作最重要，他每天都加班，连在春节的时候。" },
+            { id:"AJT12", category:"word_order", condition:"ungrammatical", sentence:"她非常看重外表和形象，她也不忘化妆，连在父亲的葬礼上。" },
+            { id:"AJT17", category:"correct", condition:"grammatical", sentence:"这家餐厅太火了，连凌晨都有人排队。" },
+            { id:"AJT18", category:"correct", condition:"grammatical", sentence:"她太紧张了，连一句完整的话都说不出来。" },
+            { id:"AJT19", category:"correct", condition:"grammatical", sentence:"昨天太忙了，他连晚饭都没来得及吃。" },
+            { id:"AJT20", category:"correct", condition:"grammatical", sentence:"这本古书太难懂了，连研究古汉语的教授都看了很久。" },
+            { id:"AJT21", category:"correct", condition:"grammatical", sentence:"连小孩子都懂得这个道理，大人怎么会不明白呢？" },
+            { id:"AJT22", category:"correct", condition:"grammatical", sentence:"来北京快10年了，她连长城都没去过。" },
+            { id:"AJT23", category:"correct", condition:"grammatical", sentence:"这首曲子太难了，连专业钢琴演奏者都练了很多遍才弹好。" },
+            { id:"AJT24", category:"correct", condition:"grammatical", sentence:"他太粗心了，连自己的钱包放在哪都不记得。" },
+            { id:"AJT25", category:"correct", condition:"grammatical", sentence:"这次活动太有意思了，连平时从不参加课外活动的同学都来了。" },
+            { id:"AJT26", category:"filler", condition:"ungrammatical", sentence:"他把昨天的作业已经交给老师了。" },
+            { id:"AJT27", category:"filler", condition:"grammatical", sentence:"这本书被他借走了，我没办法用。" },
+            { id:"AJT28", category:"filler", condition:"ungrammatical", sentence:"她比她姐姐更高三厘米。" },
+            { id:"AJT29", category:"filler", condition:"grammatical", sentence:"虽然天气很冷，但是他还是去跑步了。" },
+            { id:"AJT30", category:"filler", condition:"grammatical", sentence:"他被老师表扬了，高兴得跳起来。" },
+            { id:"AJT31", category:"filler", condition:"grammatical", sentence:"这道题我做了很久才明白怎么回答。" },
+            { id:"AJT32", category:"filler", condition:"grammatical", sentence:"他把书包忘在了教室里，到晚上睡觉前才意识到书包不见了。" },
+            { id:"AJT33", category:"filler", condition:"ungrammatical", sentence:"他比我学习汉语的时间长得多了。" }
+        ];
+
+        // ==========================================
+        // 语料库 C：半引导式产出 (部分关键词) —— 仅二语者
+        // ==========================================
+        const eptItemsRaw = [
+            { id:"EPT01", type:"target", keywords:"最爱睡觉的同学｜没睡着", context:"王老师的汉语课非常有意思。班上有个同学是出了名的“瞌睡大王”，但上王老师的课时，同学们都注意到他从来没有趴过桌子。", prompt:"王老师的课真有意思，" },
+            { id:"EPT02", type:"target", keywords:"一口水｜没顾上喝", context:"小王的同事说，昨天小王从早到晚都坐在工位上，中间一次都没离开过座位，桌上的水杯一整天都没动过。", prompt:"小王昨天从早忙到晚，" },
+            { id:"EPT03", type:"target", keywords:"银行的工作人员｜没认出", context:"小王才学了一年汉语。上周他去银行办事，用汉语跟工作人员交流，对方全程没有发现他是外国人，还夸他普通话说得好。", prompt:"小王汉语进步太快了，" },
+            { id:"EPT04", type:"target", keywords:"经验最丰富的技术员｜没弄懂", context:"这份产品说明书非常复杂。上周公司专门请来一位有多年经验的维修技术员，他研究了将近一个小时，中间还打了两个电话咨询。", prompt:"这份说明书太复杂了，" },
+            { id:"EPT05", type:"target", keywords:"同宿舍的室友｜没去看", context:"小红生病住院了。她的同学们几乎都去探望了，但和她同宿舍的小敏，从头到尾一次都没出现过，也没发过任何消息。", prompt:"小敏太过分了，" },
+            { id:"EPT06", type:"target", keywords:"最喜欢的球赛｜没去", context:"小明是个书迷。上个周末，朋友们特意订了他最喜欢的球队的门票来邀请他，他却留在家里看书，怎么劝都不出门。", prompt:"小明太爱看书了，" },
+            { id:"EPT07", type:"target", keywords:"一句谢谢｜没说", context:"小陈去朋友家做客，朋友特意打扫了房间，准备了水果和饮料，忙了一下午。小陈走后，朋友发了一条朋友圈，只写了“心寒”两个字。", prompt:"小陈太没礼貌了，" },
+            { id:"EPT_F1", type:"filler", keywords:"观众｜改变看法", context:"这部纪录片上映以后，很多观众表示对这个话题有了全新的认识。", prompt:"这部纪录片拍得很好，" },
+            { id:"EPT_F2", type:"filler", keywords:"同事｜明确方向", context:"今天的会议结束后，参会的同事们说对下一步的工作方向清楚多了。", prompt:"今天的会议很重要，" },
+            { id:"EPT_F3", type:"filler", keywords:"环境｜安静", context:"这家图书馆环境安静，藏书丰富，座位也很宽敞，深受学生喜爱。", prompt:"这家图书馆" },
+            { id:"EPT_F4", type:"filler", keywords:"消息｜高兴", context:"小李今天收到了一个好消息，同事们都注意到他一整天都笑眯眯的。", prompt:"小李今天" },
+            { id:"EPT_F5", type:"filler", keywords:"没带伞｜淋湿", context:"昨天天气预报说有小雨，很多人没带伞出门，结果下午突然下起了大雨。", prompt:"昨天的雨真大，" },
+            { id:"EPT_F6", type:"filler", keywords:"课程｜很满", context:"小张这学期选了很多课，每天的课程从上午排到下午，作业也很多。", prompt:"小张这学期很忙，" }
+        ];
+
+        // 约束随机化（目标题与填充题均匀分布）
+        function constrainedShuffle(items) {
+            let targets = jsPsych.randomization.shuffle(items.filter(item => item.category !== 'filler' && item.type !== 'filler'));
+            let fillers = jsPsych.randomization.shuffle(items.filter(item => item.category === 'filler' || item.type === 'filler'));
+            let result = [];
+            let total = targets.length + fillers.length;
+            let targetRatio = targets.length / total;
+            let targetCount = 0;
+            for (let i = 0; i < total; i++) {
+                let expectedTargets = Math.round((i + 1) * targetRatio);
+                if (targetCount < expectedTargets && targets.length > 0) {
+                    result.push(targets.pop()); targetCount++;
+                } else if (fillers.length > 0) {
+                    result.push(fillers.pop());
+                } else if (targets.length > 0) {
+                    result.push(targets.pop());
+                }
+            }
+            return result;
+        }
+
+        const freeEptItems = constrainedShuffle(freeEptItemsRaw);
+        const ajtItems = constrainedShuffle(ajtItemsRaw);
+        const eptItems = constrainedShuffle(eptItemsRaw);
+
+        const ajt_scale_labels = [
+            "1<br><span style='font-size:14px; color:#64748b;'>(非常不自然)</span>",
+            "2<br><span style='font-size:14px; color:#64748b;'>(不太自然)</span>",
+            "3<br><span style='font-size:14px; color:#64748b;'>(一般)</span>",
+            "4<br><span style='font-size:14px; color:#64748b;'>(比较自然)</span>",
+            "5<br><span style='font-size:14px; color:#64748b;'>(非常自然)</span>"
+        ];
+
+        // ==========================================
+        // 2. 欢迎界面
+        // ==========================================
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h1>欢迎参加汉语研究实验</h1>
+                <p style="font-size: 18px; line-height: 1.8; margin-bottom: 30px;">
+                    感谢您参与本次研究。您的作答数据将完全匿名，仅用于学术研究。<br>
+                    整个过程只能前进，不可后退。完成后您将获得一个专属完成码用于领取报酬。
+                </p>
+            `,
+            choices: ['开始']
+        });
+
+        // ==========================================
+        // 3. 母语筛查（决定分支）
+        // ==========================================
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h3 style="border:none;">在开始之前，请先回答一个问题</h3>
+                <p style="font-size: 20px; line-height: 1.8;">您的母语是汉语（普通话）吗？</p>
+            `,
+            choices: ['是，汉语是我的母语', '不是，汉语是我的第二语言'],
+            data: { trial_tag: 'native_check' },
+            on_finish: function(data){
+                data.is_native = (data.response === 0);
+                jsPsych.data.addProperties({ participant_group: data.response === 0 ? 'native' : 'L2' });
+            }
+        });
+
+        // ==========================================
+        // 4A. 二语者分支：人口学 + ClozCHI + 自由产出 + 半引导产出
+        // ==========================================
+        const l2Timeline = [];
+
+        // --- L2 人口学信息 ---
+        l2Timeline.push({
+            type: jsPsychSurveyHtmlForm,
+            preamble: '<h3>第一部分：个人基本信息</h3>',
+            html: `
+                <div style="text-align: left; max-width: 600px; margin: auto; line-height: 2.2; font-size: 16px;">
+                    <p><label><strong>1. 年龄：</strong> <select name="age" required>${getAgeOptions()}</select></label></p>
+                    <p><label><strong>2. 性别：</strong> <select name="gender" required><option value="" disabled selected>请选择</option><option value="male">男性</option><option value="female">女性</option></select></label></p>
+                    <p><label><strong>3. 国籍：</strong> <input type="text" name="nationality" required placeholder="例如：越南"></label></p>
+                    <p><label><strong>4. 母语：</strong> <input type="text" name="native_language" required placeholder="例如：越南语"></label></p>
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <p style="margin-top:0;"><strong>5. HSK 等级及分数（旧版 HSK 2.0，六级制）：</strong></p>
+                        <select name="hsk_level" required>
+                            <option value="" disabled selected>请选择等级</option>
+                            <option value="1">HSK 1级</option><option value="2">HSK 2级</option><option value="3">HSK 3级</option>
+                            <option value="4">HSK 4级</option><option value="5">HSK 5级</option><option value="6">HSK 6级</option>
+                            <option value="none">未参加考试</option>
+                        </select>
+                        &nbsp;&nbsp;分数：<input type="number" name="hsk_score" placeholder="若无请填0" required style="width: 100px;">
+                        <p style="margin:6px 0 0; font-size:13px; color:#64748b;">说明：本研究的 HSK 等级均指旧版（HSK 2.0）六级制。</p>
+                    </div>
+                    <p style="margin-top:15px;"><strong>6. 汉语学习时间：</strong>
+                        <select name="learning_duration" required>
+                            <option value="" disabled selected>请选择</option>
+                            <option value="0.5-1">6个月—1年</option>
+                            <option value="1-2">1年—2年</option>
+                            <option value="2-3">2年—3年</option>
+                            <option value="3-4">3年—4年</option>
+                            <option value="4+">4年以上</option>
+                        </select>
+                    </p>
+                    <p><strong>7. 是否有在中国学习/生活的经历？</strong><br>
+                        <label style="margin-right: 20px;"><input type="radio" name="china_exp" value="yes" required
+                            onclick="document.getElementById('study_time_container').style.display='block'; document.getElementById('study_time_months').setAttribute('required','required');"> 有</label>
+                        <label><input type="radio" name="china_exp" value="no"
+                            onclick="document.getElementById('study_time_container').style.display='none'; document.getElementById('study_time_months').removeAttribute('required'); document.getElementById('study_time_months').value='';"> 没有</label>
+                    </p>
+                    <div id="study_time_container" style="display: none; padding-left: 20px;">
+                        <label><strong>在华累计时间（请填写大约的总月数）：</strong>
+                        <input type="number" name="study_time_months" id="study_time_months" min="0" step="1" placeholder="例如：6" style="width: 90px;"> 个月</label>
+                        <p style="margin:4px 0 0; font-size:13px; color:#64748b;">如有多次，请填累计总月数；不足一个月按 1 计。</p>
+                    </div>
+                </div>
+            `,
+            button_label: '提交并继续',
+            data: { task_type: 'demographics_L2' }
+        });
+
+        // --- ClozCHI 水平测试（脚手架；真实短文需自行填入）---
+        l2Timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h3>第二部分：汉语完形填空（水平测试）</h3>
+                <div style="font-size:18px; line-height:1.8; text-align:left; max-width:680px; margin:auto;">
+                    <p>接下来有三篇短文，每篇中有一些空格。请先快速阅读，了解大意，然后在每个空格里填入<strong>一个最合适的汉字或拼音</strong>。</p>
+                    <p>每个空只填<strong>一个字</strong>。如果某个空实在想不出来，可以跳过，但请尽量填写。</p>
+                    <div class="example-box" style="margin-top:20px;">
+                        <strong>【例子】</strong><br>
+                        今天早上我起床起晚了，没有时间吃<span style="display:inline-block;border-bottom:1px solid #0284c7;min-width:30px;text-align:center;color:#0284c7;">早</span>饭，现在很饿。<br>
+                        <span style="color:#059669;font-size:15px;">（横线处应填"早"，组成"早饭"。）</span>
+                    </div>
+                </div>
+            `,
+            choices: ['开始填空']
+        });
+
+        // ClozCHI 真实题目 (Cai et al. 2025)，共 3 篇、71 空。
+        // 网页只采集原始作答 cloze_b1 ... cloze_b71；评分在数据分析阶段用答案库事后比对（不嵌入前端）。
+        function B(n){ return `<input type="text" name="cloze_b${n}" maxlength="8" autocomplete="off" style="width:48px;text-align:center;padding:4px 2px;margin:0 1px;font-family:'楷体',KaiTi,serif;font-size:18px;"><sub style="color:#0284c7;font-size:12px;">${n}</sub>`; }
+        const clozePassages = [
+            { id:"cloze_p1", title:"短文一", range:"第 1—9 空",
+              html:`<div class="cloze-passage">王先生的家在北京，他家里有六口人。他们是爸爸，妈${B(1)}，一个哥哥，一个${B(2)}弟，一个妹妹，还${B(3)}他。他的哥哥已${B(4)}结婚了，没有跟${B(5)}母住在一起。王${B(6)}生还没结婚，可${B(7)}他也没跟父母${B(8)}在一起。现在他${B(9)}美国读书。只有他的弟弟和父母住在一起。</div>` },
+            { id:"cloze_p2", title:"短文二", range:"第 10—35 空",
+              html:`<div class="cloze-passage">近年来，丁克家庭越来越多，它的意思是夫妻二人都有收入，但是没有孩子。大部分丁克家${B(10)}不要孩子的主${B(11)}原因是不想让${B(12)}己的生活被孩${B(13)}打扰。他们大都${B(14)}现在的夫妻二${B(15)}世界很满意，不${B(16)}为孩子花费太${B(17)}的时间和精力。${B(18)}外，不想让孩子${B(19)}苦也是部分人${B(20)}择做丁克家庭${B(21)}原因。要不要做${B(22)}克家庭，每个人${B(23)}然都有选择的${B(24)}由。而我觉得，任${B(25)}事都有两面性，${B(26)}能只看到养育${B(27)}子的不便之处，${B(28)}看不到这样做${B(29)}好处。养育孩子${B(30)}然辛苦，但苦中${B(31)}乐，孩子也会给${B(32)}母带来很多快${B(33)}。此外，父母老了${B(34)}时候，孩子还能${B(35)}顾父母。从大的方面来说，养育子女是每个家庭的责任，家庭应该负起这个责任。</div>` },
+            { id:"cloze_p3", title:"短文三", range:"第 36—71 空",
+              html:`<div class="cloze-passage">在第八届中国艺术节举办期间，东道主湖北省端出一道文化盛宴——永久免费开放湖北省博物馆。自免费之后，游${B(36)}人数大大超出${B(37)}理者预期的参${B(38)}人数，而由此带${B(39)}的一系列问题，${B(40)}发了人们的热${B(41)}和深思。收费时，${B(42)}众止步，博物馆${B(43)}可罗雀；免费后，${B(44)}物馆爆满，这反${B(45)}了中国经济社${B(46)}发展对文化建${B(47)}的新要求，反映${B(48)}物质生活改善${B(49)}人民群众对文${B(50)}服务的新期待。${B(51)}年来，随着中国${B(52)}济社会的发展，${B(53)}化事业也有了${B(54)}足的进步。可令${B(55)}担忧的是，由于${B(56)}共文化服务体${B(57)}不健全、文化基${B(58)}设施落后、文化${B(59)}务能力偏低等${B(60)}因，许多群众还${B(61)}以享受到贴近${B(62)}活的文化服务${B(63)}式。更严重的是，${B(64)}些文化事业单${B(65)}在利益的驱使${B(66)}，不断提高门票${B(67)}格，将许多群众${B(68)}其是低收入者${B(69)}在门外，使本已${B(70)}乏的公共文化${B(71)}施再度缩水。这正是博物馆免费开放前后一"冷"一"热"的基本原因。</div>` }
+        ];
+        clozePassages.forEach(p => {
+            l2Timeline.push({
+                type: jsPsychSurveyHtmlForm,
+                preamble: `<p style="font-size:18px; font-weight:600; text-align:left; max-width:680px; margin:auto;">${p.title}　<span style="color:#64748b;font-size:15px;font-weight:400;">（${p.range}）</span></p>`,
+                html: `<div style="max-width:680px; margin:auto;">${p.html}</div>`,
+                button_label: '提交并继续',
+                data: { task_type: 'ClozCHI', passage_id: p.id }
+            });
+        });
+
+        // --- 自由产出任务说明 ---
+        l2Timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h3>第三部分：看情境完成句子</h3>
+                <div style="font-size: 18px; line-height: 1.8; text-align: left; max-width: 700px; margin: auto;">
+                    <p>下面有一些小情境。请您阅读后，用一句<strong>自然、完整</strong>的中文把句子补充完整。</p>
+                    <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 15px 25px; border-radius: 8px; margin: 20px 0; color: #1e40af; line-height: 2;">
+                        <strong>要求：</strong><br>
+                        1. 不需要重复情境中的句子；<br>
+                        2. 用您觉得最自然的方式表达即可；<br>
+                        3. 没有标准答案，怎么说自然就怎么写。
+                    </div>
+                </div>
+            `,
+            choices: ['进行练习题']
+        });
+        l2Timeline.push({
+            type: jsPsychSurveyHtmlForm,
+            preamble: `
+                <p style="color: #64748b; font-size: 16px; margin-bottom: 10px;">【练习题】请把句子补充完整：</p>
+                <div style="max-width: 700px; margin: auto;">
+                    <div class="ept-context">今天天气特别好，阳光明媚，温度也刚刚好。</div>
+                    <div class="ept-prompt kaiti-text">今天天气真不错，</div>
+                </div>
+            `,
+            html: `<input type="text" name="free_practice" required minlength="3" autocomplete="off" style="width: 100%; max-width: 500px; padding: 12px; font-size: 20px; font-family: '楷体', KaiTi, serif;" placeholder="请在此作答...">`,
+            button_label: '提交练习，开始正式作答'
+        });
+        freeEptItems.forEach((item, index) => {
+            l2Timeline.push({
+                type: jsPsychSurveyHtmlForm,
+                preamble: `
+                    <div style="max-width: 700px; margin: auto;">
+                        <div class="ept-context">${item.context}</div>
+                        <div class="ept-prompt kaiti-text">${item.prompt}</div>
+                    </div>
+                `,
+                html: `<input type="text" name="free_q_${item.id}" required minlength="3" autocomplete="off" style="width: 100%; max-width: 500px; padding: 12px; font-size: 20px; font-family: '楷体', KaiTi, serif;" placeholder="请在此作答...">`,
+                button_label: '提交并下一题',
+                data: { task_type: 'FreeEPT', item_id: item.id, item_type: item.type, stimulus_context: item.context, stimulus_prompt: item.prompt, presentation_order: index + 1 }
+            });
+        });
+
+        // --- 半引导产出任务说明 ---
+        l2Timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h3>第四部分：看情境和关键词完成句子</h3>
+                <div style="font-size: 18px; line-height: 1.8; text-align: left; max-width: 700px; margin: auto;">
+                    <p>这一部分和上一部分类似，但每道题会多给两个<strong>关键词</strong>提示。请您<strong>结合情境和关键词</strong>，把句子补充完整。</p>
+                    <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 15px 25px; border-radius: 8px; margin: 20px 0; color: #1e40af; line-height: 2;">
+                        <strong>要求：</strong><br>
+                        1. 关键词只是提示，<strong>不必原样照搬</strong>，可以改变词形或顺序；<br>
+                        　请尽量用<strong>一个能突出、强调这种情况的句子</strong>来表达；<br>
+                        2. 用最自然、完整的方式表达即可；<br>
+                        3. 不限制答案长度。
+                    </div>
+                </div>
+            `,
+            choices: ['进行练习题']
+        });
+        l2Timeline.push({
+            type: jsPsychSurveyHtmlForm,
+            preamble: `
+                <p style="color: #64748b; font-size: 16px; margin-bottom: 10px;">【练习题】请结合情境和关键词补全句子：</p>
+                <div style="max-width: 700px; margin: auto;">
+                    <div class="ept-context">这部喜剧电影太搞笑了，电影院里每个人都在大笑。平时最严肃、从不苟言笑的张教授去看了，出来时也笑出了眼泪。</div>
+                    <div style="margin-bottom: 15px; font-size: 18px; color: #0284c7;"><strong>关键词：</strong> 教授｜笑</div>
+                    <div class="ept-prompt kaiti-text">这部电影太搞笑了，</div>
+                </div>
+            `,
+            html: `<input type="text" name="ept_practice" required minlength="4" autocomplete="off" style="width: 100%; max-width: 500px; padding: 12px; font-size: 20px; font-family: '楷体', KaiTi, serif;" placeholder="请在此作答...">`,
+            button_label: '提交练习，开始正式测试'
+        });
+        // 半引导任务中插入 1 道注意力检查（固定在中部）
+        const guidedAttentionIndex = Math.floor(eptItems.length / 2);
+        eptItems.forEach((item, index) => {
+            if (index === guidedAttentionIndex) {
+                l2Timeline.push({
+                    type: jsPsychSurveyHtmlForm,
+                    preamble: `
+                        <div style="max-width: 700px; margin: auto;">
+                            <div class="attention-box"><strong>【检查题】</strong> 这道题用来确认您在认真作答。请在下面的横线上<strong>直接写下四个字：“我在作答”</strong>，不要写别的内容。</div>
+                            <div class="ept-prompt kaiti-text">请写：</div>
+                        </div>
+                    `,
+                    html: `<input type="text" name="attn_check_guided" required minlength="2" autocomplete="off" style="width: 100%; max-width: 500px; padding: 12px; font-size: 20px; font-family: '楷体', KaiTi, serif;" placeholder="请在此作答...">`,
+                    button_label: '提交并下一题',
+                    data: { task_type: 'AttentionCheck', check_location: 'guided', expected_answer: '我在作答' }
+                });
+            }
+            l2Timeline.push({
+                type: jsPsychSurveyHtmlForm,
+                preamble: `
+                    <div style="max-width: 700px; margin: auto;">
+                        <div class="ept-context">${item.context}</div>
+                        <div style="margin-bottom: 15px; font-size: 18px; color: #0284c7;"><strong>关键词：</strong> ${item.keywords}</div>
+                        <div class="ept-prompt kaiti-text">${item.prompt}</div>
+                    </div>
+                `,
+                html: `<input type="text" name="ept_q_${item.id}" required minlength="4" autocomplete="off" style="width: 100%; max-width: 500px; padding: 12px; font-size: 20px; font-family: '楷体', KaiTi, serif;" placeholder="请在此作答...">`,
+                button_label: '提交并下一题',
+                data: { task_type: 'GuidedEPT', item_id: item.id, item_type: item.type, stimulus_context: item.context, stimulus_keywords: item.keywords, stimulus_prompt: item.prompt, presentation_order: index + 1 }
+            });
+        });
+
+        timeline.push({ timeline: l2Timeline, conditional_function: function(){
+            const last = jsPsych.data.get().filter({trial_tag:'native_check'}).last(1).values()[0];
+            return last && last.is_native === false;
+        }});
+
+        // ==========================================
+        // 4B. 母语者分支：简化人口学信息
+        // ==========================================
+        const nativeTimeline = [];
+        nativeTimeline.push({
+            type: jsPsychSurveyHtmlForm,
+            preamble: '<h3>个人基本信息</h3>',
+            html: `
+                <div style="text-align: left; max-width: 600px; margin: auto; line-height: 2.2; font-size: 16px;">
+                    <p><label><strong>1. 年龄：</strong> <select name="age" required>${getAgeOptions()}</select></label></p>
+                    <p><label><strong>2. 性别：</strong> <select name="gender" required><option value="" disabled selected>请选择</option><option value="male">男性</option><option value="female">女性</option></select></label></p>
+                    <p><label><strong>3. 您从小成长的主要地区（省/市）：</strong> <input type="text" name="region" required placeholder="例如：北京 / 广东"></label></p>
+                    <p style="color:#64748b; font-size:14px;">（您作为汉语母语者，只需完成接下来的句子判断部分，用于建立母语者参照基线。）</p>
+                </div>
+            `,
+            button_label: '提交并继续',
+            data: { task_type: 'demographics_native' }
+        });
+        timeline.push({ timeline: nativeTimeline, conditional_function: function(){
+            const last = jsPsych.data.get().filter({trial_tag:'native_check'}).last(1).values()[0];
+            return last && last.is_native === true;
+        }});
+
+        // ==========================================
+        // 5. AJT —— 母语者与二语者共同完成（始终在最后）
+        // ==========================================
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h3>句子自然度判断</h3>
+                <div style="font-size: 18px; line-height: 1.8; text-align: left; max-width: 650px; margin: auto;">
+                    <p>接下来您将看到一些汉语句子。请根据您的<strong>语感</strong>判断句子是否自然。</p>
+                    <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 15px 25px; border-radius: 8px; margin: 20px 0; color: #1e40af; font-weight: bold; line-height: 2;">
+                        1 = 非常不自然<br>2 = 不太自然<br>3 = 一般<br>4 = 比较自然<br>5 = 非常自然
+                    </div>
+                    <p>没有标准答案，请根据您的第一感觉作答。</p>
+                    <div class="example-box" style="margin-top: 30px;">
+                        <strong>【范例】</strong> <br><span class="kaiti-text" style="font-size:22px;">昨天太忙了，他都没回家睡觉。</span><br><br>
+                        <span style="color:#059669; font-size: 16px;"><strong>解释：</strong>如果您觉得这个句子非常自然，可以选5；如果觉得不自然，可以选较低的分数。</span>
+                    </div>
+                </div>
+            `,
+            choices: ['进行练习题']
+        });
+        timeline.push({
+            type: jsPsychSurveyLikert,
+            questions: [{ prompt: `<p style="color: #64748b; font-size: 16px; margin-bottom: 10px;">【练习 1】请评分：</p><p class="kaiti-text" style="margin-bottom: 50px;">今天天气很好，大家都去公园玩。</p>`, labels: ajt_scale_labels, required: true }],
+            button_label: '下一题'
+        });
+        timeline.push({
+            type: jsPsychSurveyLikert,
+            questions: [{ prompt: `<p style="color: #64748b; font-size: 16px; margin-bottom: 10px;">【练习 2】请评分：</p><p class="kaiti-text" style="margin-bottom: 50px;">我昨天把已经作业写完了。</p>`, labels: ajt_scale_labels, required: true }],
+            button_label: '提交练习'
+        });
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `<div style="font-size: 18px; line-height: 1.8; text-align: center; max-width: 650px; margin: auto;"><h3 style="margin-bottom: 20px; border: none;">练习结束</h3><p>确认了解评分方式后，点击继续进入正式判断。</p></div>`,
+            choices: ['继续']
+        });
+
+        // AJT 正式题，中部插入 1 道注意力检查
+        const ajtAttentionIndex = Math.floor(ajtItems.length / 2);
+        ajtItems.forEach((item, index) => {
+            if (index === ajtAttentionIndex) {
+                timeline.push({
+                    type: jsPsychSurveyLikert,
+                    questions: [{ prompt: `<div class="attention-box" style="margin-bottom:30px;"><strong>【检查题】</strong> 这道题用来确认您在认真作答。请<strong>直接选择“2（不太自然）”</strong>。</div>`, labels: ajt_scale_labels, required: true, name: 'attn_check_ajt' }],
+                    button_label: '下一题',
+                    data: { task_type: 'AttentionCheck', check_location: 'ajt', expected_answer: 1 }
+                });
+            }
+            timeline.push({
+                type: jsPsychSurveyLikert,
+                questions: [{ prompt: `<p class="kaiti-text" style="margin-bottom: 50px;">${item.sentence}</p>`, labels: ajt_scale_labels, required: true, name: `ajt_q_${item.id}` }],
+                button_label: '下一题',
+                data: { task_type: 'AJT', item_id: item.id, category: item.category, condition: item.condition, stimulus_sentence: item.sentence, presentation_order: index + 1 }
+            });
+        });
+
+        // ==========================================
+        // 6. 记录总时长并保存
+        // ==========================================
+        timeline.push({
+            type: jsPsychCallFunction,
+            func: function() { jsPsych.data.addProperties({ total_duration_seconds: Math.round(jsPsych.getTotalTime() / 1000) }); }
+        });
+        timeline.push({
+            type: jsPsychPipe,
+            action: "save",
+            experiment_id: DATA_PIPE_EXPERIMENT_ID,
+            filename: `${subject_id}.csv`,
+            data_string: () => jsPsych.data.get().csv()
+        });
+
+        // ==========================================
+        // 7. 结束页面
+        // ==========================================
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h3>实验结束！</h3>
+                <p style="font-size: 18px; color: #16a34a; font-weight: bold;">您的作答数据已成功上传，非常感谢您的参与！</p>
+                <div style="background-color: #e0f2fe; padding: 25px; border-radius: 12px; border: 2px dashed #0284c7; max-width: 500px; margin: 30px auto;">
+                    <p style="margin: 0 0 10px 0; color: #475569;">您的专属完成码为：</p>
+                    <p style="font-size: 32px; font-weight: bold; color: #0369a1; margin: 0; letter-spacing: 2px;">${completion_code}</p>
+                </div>
+                <p style="font-size: 16px; line-height: 1.8; margin-bottom: 30px;">请截图保存此页面，或复制完成码，发送至主试邮箱：<strong>sycamlien@gmail.com</strong> 以便核对并发放报酬。</p>
+                <p style="color: #94a3b8; font-size: 14px;">现在您可以安全地关闭浏览器窗口了。</p>
+            `,
+            choices: []
+        });
+
+        jsPsych.run(timeline);
+    </script>
+</body>
+</html>
